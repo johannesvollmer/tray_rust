@@ -1,6 +1,7 @@
 extern crate tray_rust;
 extern crate rand;
 extern crate image;
+extern crate exr;
 
 use std::sync::Arc;
 use rand::StdRng;
@@ -86,14 +87,14 @@ fn main() {
         block_samples.clear();
     }
 
-    // Get the sRGB8 render buffer from the floating point framebuffer and save it
-    let img = rt.get_render();
-    match image::save_buffer("sphere.png",
-                             &img[..],
-                             dim.0 as u32,
-                             dim.1 as u32,
-                             image::RGB(8)) {
-        Ok(_) => {}
-        Err(e) => println!("Error saving image, {}", e),
-    };
+    use exr::prelude::*;
+    let image = rgba::Image::new(
+        Vec2(dim.0, dim.1), // exrs TODO add `(usize, usize).into()` implementation
+        false, false,
+        rgba::Pixels::F32(rt.get_renderf32()) // exrs TODO should also work with borrowed data
+    );
+
+    if let Err(e) = image.write_to_file("sphere.png", write_options::default()) {
+        eprintln!("Error saving image, {:?}", e);
+    }
 }
